@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>链接生成器</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+:root {
+    --bg-color: #fafafa;
+    --card-color: #ffffff;
+    --text-primary: #212121;
+    --text-secondary: #757575;
+    --accent-color: #212121;
+    --border-color: #eeeeee;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --error-color: #f44336;
+    --focus-color: #212121;
+    --terminal-bg: #282c34;
+    --ai-color: #757575;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #121212;
+        --card-color: #1e1e1e;
+        --text-primary: #ffffff;
+        --text-secondary: #b0b0b0;
+        --accent-color: #ffffff;
+        --border-color: #333333;
+        --shadow-color: rgba(0, 0, 0, 0.3);
+        --error-color: #ef5350;
+        --focus-color: #ffffff;
+    }
+}
+
+body {
+    background-color: var(--bg-color);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: var(--text-primary);
+    padding: 20px;
+    position: relative;
+}
+
+.container {
+    width: 100%;
+    max-width: 560px;
+    background: var(--card-color);
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px var(--shadow-color);
+    transition: all 0.3s ease;
+    transform: translateY(0);
+}
+
+.container:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px var(--shadow-color);
+}
+
+h1 {
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 24px;
+    letter-spacing: -0.5px;
+}
+
+.description {
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    text-align: center;
+    line-height: 1.5;
+    font-size: 15px;
+}
+
+.input-group {
+    position: relative;
+    margin-bottom: 24px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.input-container {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.input-field {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 15px;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.input-field:focus {
+    border-color: var(--focus-color);
+    box-shadow: 0 0 0 1px var(--focus-color);
+}
+
+.square-btn {
+    background: var(--bg-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.square-btn:hover {
+    background: var(--card-color);
+    border-color: var(--text-secondary);
+}
+
+.paste-icon, .check-icon {
+    width: 20px;
+    height: 20px;
+    fill: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+.square-btn:hover .paste-icon {
+    fill: var(--text-primary);
+}
+
+.check-icon {
+    position: absolute;
+    fill: var(--text-primary);
+    opacity: 0;
+    transform: scale(0);
+}
+
+.paste-btn.success .paste-icon {
+    opacity: 0;
+    transform: scale(0);
+}
+
+.paste-btn.success .check-icon {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.paste-btn.success {
+    border-color: var(--text-primary);
+    background-color: var(--bg-color);
+}
+
+/* AI按钮样式 */
+.ai-btn {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+}
+
+.ai-btn:hover {
+    border-color: var(--ai-color);
+}
+
+.ai-text {
+    font-weight: bold;
+    font-size: 14px;
+    color: var(--ai-color);
+    font-family: 'Fira Code', monospace;
+    letter-spacing: -0.5px;
+    transition: all 0.3s ease;
+}
+
+.ai-btn:hover .ai-text {
+    color: var(--ai-color);
+    transform: scale(1.1);
+}
+
+.ai-btn.loading .ai-text {
+    display: none;
+}
+
+.ai-spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-top-color: var(--ai-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.ai-btn.loading .ai-spinner {
+    display: block;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* AI提示弹窗 */
+.ai-prompt-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.ai-prompt-modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.ai-prompt-content {
+    background-color: var(--card-color);
+    padding: 24px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.ai-prompt-content h3 {
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+#ai-prompt-input {
+    width: 100%;
+    height: 120px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-size: 14px;
+    resize: none;
+    margin-bottom: 16px;
+}
+
+#ai-prompt-input:focus {
+    outline: none;
+    border-color: var(--ai-color);
+}
+
+.ai-prompt-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.ai-prompt-buttons button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#ai-prompt-cancel {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+#ai-prompt-submit {
+    background-color: var(--ai-color);
+    color: white;
+    border: none;
+}
+
+#ai-prompt-cancel:hover {
+    color: var(--text-primary);
+    border-color: var(--text-primary);
+}
+
+#ai-prompt-submit:hover {
+    opacity: 0.9;
+}
+
+/* 图标预览 */
+.avatar-preview {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 8px;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 10px;
+    text-align: center;
+    overflow: hidden;
+}
+
+.avatar-preview.has-image {
+    color: transparent;
+}
+
+.button-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 32px;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 14px 20px;
+    background-color: var(--accent-color);
+    color: var(--card-color);
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.action-btn:active {
+    transform: translateY(0);
+}
+
+.reset-btn {
+    background-color: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.reset-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--text-primary);
+}
+
+.code-container {
+    margin-top: 32px;
+    position: relative;
+    display: none;
+}
+
+/* 终端风格代码块 */
+.terminal {
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--terminal-bg);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.terminal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #1e1e1e;
+    border-bottom: 1px solid #333;
+    position: relative;
+}
+
+.terminal-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.terminal-button {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.terminal-button.red {
+    background-color: #ff5f56;
+}
+
+.terminal-button.yellow {
+    background-color: #ffbd2e;
+}
+
+.terminal-button.green {
+    background-color: #27c93f;
+}
+
+.terminal-title {
+    color: #ddd;
+    font-size: 12px;
+    font-family: monospace;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.terminal-body {
+    padding: 15px;
+    position: relative;
+}
+
+pre {
+    margin: 0;
+    font-family: 'Fira Code', 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #eee;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+    background-color: rgba(30, 30, 30, 0.8);
+    border: none;
+    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.copy-btn svg {
+    width: 16px;
+    height: 16px;
+    fill: rgba(255, 255, 255, 0.6);
+    transition: fill 0.2s ease;
+}
+
+.copy-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.copy-btn:hover svg {
+    fill: rgba(255, 255, 255, 0.9);
+}
+
+.copy-btn.copied {
+    background-color: #4caf50;
+}
+
+.copy-btn.copied svg {
+    fill: white;
+}
+
+footer {
+    margin-top: 24px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    text-align: center;
+}
+
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-4px); }
+    40%, 80% { transform: translateX(4px); }
+}
+
+.shake-animation {
+    animation: shake 0.5s ease;
+}
+
+/* 代码高亮 */
+.yaml-key {
+    color: #e06c75;
+}
+
+.yaml-value {
+    color: #98c379;
+}
+
+.yaml-indent {
+    color: #abb2bf;
+}
+
+/* 响应式设计 */
+@media (max-width: 600px) {
+    .container {
+        padding: 30px 20px;
+    }
+    
+    .button-group {
+        flex-direction: column;
+    }
+    
+    .action-btn {
+        width: 100%;
+    }
+} 
+    </style>    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    // 获取DOM元素
+    const linkInput = document.getElementById('link');
+    const nameInput = document.getElementById('name');
+    const avatarInput = document.getElementById('avatar');
+    const descrInput = document.getElementById('descr');
+    const generateBtn = document.getElementById('generate-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const copyBtn = document.getElementById('copy-btn');
+    const resultContainer = document.getElementById('result-container');
+    const resultCode = document.getElementById('result-code');
+    const pasteBtn = document.getElementById('paste-btn');
+    const avatarPreview = document.getElementById('avatar-preview');
+    const nameAiBtn = document.getElementById('name-ai-btn');
+    const descrAiBtn = document.getElementById('descr-ai-btn');
+    const aiPromptModal = document.getElementById('ai-prompt-modal');
+    const aiPromptInput = document.getElementById('ai-prompt-input');
+    const aiPromptCancel = document.getElementById('ai-prompt-cancel');
+    const aiPromptSubmit = document.getElementById('ai-prompt-submit');
+    
+
+    
+    // 当前AI操作的目标字段
+    let currentAiTarget = null;
+    
+    // 初始化
+    avatarPreview.textContent = '无预览';
+    
+    // 添加事件监听器
+    generateBtn.addEventListener('click', generateCode);
+    resetBtn.addEventListener('click', resetForm);
+    copyBtn.addEventListener('click', copyToClipboard);
+    pasteBtn.addEventListener('click', pasteFromClipboard);
+    linkInput.addEventListener('blur', handleLinkBlur);
+    avatarInput.addEventListener('input', updateAvatarPreview);
+    linkInput.addEventListener('input', autoGenerateAvatarLink);
+    nameAiBtn.addEventListener('click', () => generateAiContent('name'));
+    descrAiBtn.addEventListener('click', () => generateAiContent('descr'));
+    
+    // 生成AI内容
+    async function generateAiContent(target) {
+        // 检查链接是否已输入
+        if (!linkInput.value.trim()) {
+            showToast('请先输入网站链接');
+            return;
+        }
+        
+        // 显示加载状态
+        const targetBtn = target === 'name' ? nameAiBtn : descrAiBtn;
+        targetBtn.classList.add('loading');
+        
+        try {
+            // 模拟AI请求延迟
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // 从链接中提取信息
+            const url = linkInput.value.trim();
+            let result = '';
+            
+            try {
+                const urlObj = new URL(url);
+                const domain = urlObj.hostname.replace('www.', '');
+                
+                if (target === 'name') {
+                    // 生成网站名称
+                    const domainParts = domain.split('.');
+                    // 首字母大写
+                    result = domainParts[0].charAt(0).toUpperCase() + domainParts[0].slice(1);
+                    // 如果名称太长，截取一部分
+                } else {
+                    // 生成网站描述
+                    const keywords = ['优质', '专业', '精选', '热门', '权威'];
+                    const types = ['资源', '内容', '服务', '平台', '社区'];
+                    const random1 = Math.floor(Math.random() * keywords.length);
+                    const random2 = Math.floor(Math.random() * types.length);
+                    result = `${keywords[random1]}的${domainParts[0]}${types[random2]}`;
+                    // 确保不超过20字
+                    if (result.length > 20) {
+                        result = result.substring(0, 20);
+                    }
+                }
+                
+                // 更新输入框
+                if (target === 'name') {
+                    nameInput.value = result;
+                } else {
+                    descrInput.value = result;
+                }
+                
+                showToast('AI内容生成成功');
+            } catch (error) {
+                throw new Error('无法解析URL');
+            }
+        } catch (error) {
+            console.error('AI生成失败:', error);
+            showToast('AI生成失败，请检查链接格式');
+        } finally {
+            // 恢复按钮状态
+            targetBtn.classList.remove('loading');
+        }
+    }
+    
+    // 处理链接失去焦点时自动补全http前缀
+    function handleLinkBlur() {
+        const url = linkInput.value.trim();
+        if (url && !url.match(/^https?:\/\//i)) {
+            linkInput.value = 'https://' + url;
+            // 自动生成图标链接
+            autoGenerateAvatarLink();
+        }
+    }
+    
+    // 自动生成图标链接
+    function autoGenerateAvatarLink() {
+        const url = linkInput.value.trim();
+        if (url && url.match(/^https?:\/\//i)) {
+            try {
+                const urlObj = new URL(url);
+                // 移除URL中的路径和查询参数，只保留域名部分
+                const faviconUrl = `${urlObj.protocol}//${urlObj.hostname}/favicon.ico`;
+                
+                // 只有当图标链接为空时才自动填充
+                if (!avatarInput.value.trim()) {
+                    avatarInput.value = faviconUrl;
+                    updateAvatarPreview();
+                }
+            } catch (e) {
+                // URL解析错误，不做处理
+            }
+        }
+    }
+    
+    // 更新图标预览
+    function updateAvatarPreview() {
+        const avatarUrl = avatarInput.value.trim();
+        
+        if (avatarUrl) {
+            // 创建一个新的图像对象来测试URL是否有效
+            const img = new Image();
+            img.onload = function() {
+                avatarPreview.style.backgroundImage = `url('${avatarUrl}')`;
+                avatarPreview.textContent = '';
+                avatarPreview.classList.add('has-image');
+            };
+            img.onerror = function() {
+                avatarPreview.style.backgroundImage = 'none';
+                avatarPreview.textContent = '无效图片';
+                avatarPreview.classList.remove('has-image');
+            };
+            img.src = avatarUrl;
+        } else {
+            avatarPreview.style.backgroundImage = 'none';
+            avatarPreview.textContent = '无预览';
+            avatarPreview.classList.remove('has-image');
+        }
+    }
+    
+    // 从剪贴板粘贴
+    async function pasteFromClipboard() {
+        try {
+            const text = await navigator.clipboard.readText();
+            linkInput.value = text;
+            
+            // 处理链接格式
+            handleLinkBlur();
+            
+            // 添加成功动画
+            pasteBtn.classList.add('success');
+            setTimeout(() => {
+                pasteBtn.classList.remove('success');
+            }, 2000);
+        } catch (err) {
+            console.error('无法读取剪贴板内容: ', err);
+            showToast('无法读取剪贴板内容，请手动粘贴');
+        }
+    }
+    
+    // 重置表单
+    function resetForm() {
+        linkInput.value = '';
+        nameInput.value = '';
+        avatarInput.value = '';
+        descrInput.value = '';
+        
+        // 重置图标预览
+        avatarPreview.style.backgroundImage = 'none';
+        avatarPreview.textContent = '无预览';
+        avatarPreview.classList.remove('has-image');
+        
+        if (resultContainer.style.display !== 'none') {
+            resultContainer.style.display = 'none';
+        }
+        
+        showToast('表单已重置');
+    }
+    
+    // 生成代码
+    function generateCode() {
+        const name = nameInput.value.trim();
+        const link = linkInput.value.trim();
+        const avatar = avatarInput.value.trim();
+        const descr = descrInput.value.trim();
+        
+        if (!name || !link) {
+            showToast('请填写网站名称和链接');
+            return;
+        }
+        
+        if (!isValidUrl(link)) {
+            showToast('请输入有效的URL格式');
+            return;
+        }
+        
+        // 生成YAML格式代码
+        const code = `  - name: ${name}
+      link: ${link}
+      avatar: ${avatar}
+      descr: ${descr}`;
+        
+        // 显示结果并应用终端风格高亮
+        resultCode.innerHTML = syntaxHighlightYaml(code);
+        resultContainer.style.display = 'block';
+        
+        // 平滑滚动到结果区域
+        setTimeout(() => {
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+    }
+    
+    // YAML语法高亮
+    function syntaxHighlightYaml(code) {
+        return code
+            .replace(/^(\s+)(-\s+)(name:)(\s+)(.+)$/gm, '$1<span class="yaml-indent">$2</span><span class="yaml-key">$3</span>$4<span class="yaml-value">$5</span>')
+            .replace(/^(\s+)(link:)(\s+)(.+)$/gm, '$1<span class="yaml-key">$2</span>$3<span class="yaml-value">$4</span>')
+            .replace(/^(\s+)(avatar:)(\s+)(.+)$/gm, '$1<span class="yaml-key">$2</span>$3<span class="yaml-value">$4</span>')
+            .replace(/^(\s+)(descr:)(\s+)(.+)$/gm, '$1<span class="yaml-key">$2</span>$3<span class="yaml-value">$4</span>');
+    }
+    
+    // 复制到剪贴板
+    function copyToClipboard() {
+        // 创建一个临时元素来存储纯文本内容
+        const tempElement = document.createElement('textarea');
+        tempElement.value = resultCode.textContent;
+        document.body.appendChild(tempElement);
+        tempElement.select();
+        
+        try {
+            document.execCommand('copy');
+            showToast('代码已复制到剪贴板！');
+            
+            // 复制成功动画
+            copyBtn.classList.add('copied');
+            setTimeout(() => {
+                copyBtn.classList.remove('copied');
+            }, 1000);
+        } catch (err) {
+            console.error('复制失败:', err);
+            showToast('复制失败，请手动复制');
+        }
+        
+        document.body.removeChild(tempElement);
+    }
+    
+    // 显示提示消息
+    function showToast(message) {
+        // 检查是否已有toast
+        let toast = document.querySelector('.toast');
+        
+        if (toast) {
+            // 如果已有toast，先移除
+            document.body.removeChild(toast);
+        }
+        
+        // 创建新的toast
+        toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        
+        // 添加到页面
+        document.body.appendChild(toast);
+        
+        // 显示toast
+        setTimeout(() => {
+            toast.style.opacity = '1';
+        }, 10);
+        
+        // 3秒后隐藏
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            
+            // 完全隐藏后移除DOM
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    document.body.removeChild(toast);
+                }
+            }, 300);
+        }, 3000);
+    }
+    
+    // 验证URL格式
+    function isValidUrl(string) {
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+}); 
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>链接生成器</h1>
+        <p class="description">填写信息，生成链接代码</p>
+        
+        <div class="input-group">
+            <label for="link">网站链接</label>
+            <div class="input-container">
+                <input type="text" class="input-field" id="link" placeholder="请输入网站链接">
+                <button class="square-btn paste-btn" id="paste-btn" title="从剪贴板粘贴">
+                    <svg class="paste-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/>
+                    </svg>
+                    <svg class="check-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label for="name">网站名称</label>
+            <div class="input-container">
+                <input type="text" class="input-field" id="name" placeholder="请输入网站名称">
+                <button class="square-btn ai-btn" id="name-ai-btn" title="AI辅助生成名称">
+                    <div class="ai-text">AI</div>
+                    <div class="ai-spinner"></div>
+                </button>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label for="avatar">图标链接</label>
+            <div class="input-container">
+                <input type="text" class="input-field" id="avatar" placeholder="请输入图标链接">
+                <div class="avatar-preview" id="avatar-preview"></div>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <label for="descr">描述</label>
+            <div class="input-container">
+                <input type="text" class="input-field" id="descr" placeholder="请输入描述">
+                <button class="square-btn ai-btn" id="descr-ai-btn" title="AI辅助生成描述">
+                    <div class="ai-text">AI</div>
+                    <div class="ai-spinner"></div>
+                </button>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button class="action-btn" id="generate-btn">生成代码</button>
+            <button class="action-btn reset-btn" id="reset-btn">重置</button>
+        </div>
+        
+        <div class="code-container" id="result-container" style="display: none;">
+            <div class="terminal">
+                <div class="terminal-header">
+                    <div class="terminal-buttons">
+                        <div class="terminal-button red"></div>
+                        <div class="terminal-button yellow"></div>
+                        <div class="terminal-button green"></div>
+                    </div>
+                    <div class="terminal-title">yaml</div>
+                    <button class="square-btn copy-btn" id="copy-btn" title="复制代码">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="terminal-body">
+                    <pre id="result-code"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        链接生成器 &copy; 2025
+    </footer>
+
+    <!-- AI提示弹窗 -->
+    <div class="ai-prompt-modal" id="ai-prompt-modal">
+        <div class="ai-prompt-content">
+            <h3>AI提示词</h3>
+            <textarea id="ai-prompt-input" placeholder="请输入提示词，告诉AI如何生成内容..."></textarea>
+            <div class="ai-prompt-buttons">
+                <button id="ai-prompt-cancel">取消</button>
+                <button id="ai-prompt-submit">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 
